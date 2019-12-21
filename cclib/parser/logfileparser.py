@@ -7,6 +7,7 @@
 """Generic output file parser and related tools"""
 
 
+import lzma
 import bz2
 import fileinput
 import gzip
@@ -34,6 +35,17 @@ from cclib.parser.data import ccData_optdone_bool
 
 # This seems to avoid a problem with Avogadro.
 logging.logMultiprocessing = 0
+
+
+class myLZMAFile(lzma.LZMAFile):
+    """Return string instead of bytes"""
+    def __next__(self):
+        line = super(lzma.LZMAFile, self).__next__()
+        return line.decode("ascii", "replace")
+
+    def next(self):
+        line = self.__next__()
+        return line
 
 
 class myBZ2File(bz2.BZ2File):
@@ -161,6 +173,9 @@ def openlogfile(filename, object=None):
             # Module 'bz2' is not always importable.
             assert bz2 is not None, "ERROR: module bz2 cannot be imported"
             fileobject = myBZ2File(object, "r") if object else myBZ2File(filename, "r")
+
+        elif extension in ['.lzma', '.xz']:
+            fileobject = myLZMAFile(object, "r") if object else myLZMAFile(filename, "r")
 
         else:
             # Assuming that object is text file encoded in utf-8
